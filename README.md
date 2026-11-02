@@ -1,4 +1,4 @@
-# Triply AI
+# Família a Bordo
 
 Primeira versão local da experiência cinematográfica 3D de viagem. Salvador, 12 a 14 de março de 2027.
 
@@ -28,7 +28,7 @@ Protótipo inicial: cidade, aeronave e rota são ilustrativas. Não há IA conec
 
 ## GitHub
 
-Repositório privado: https://github.com/Riquee05/triply-ai. Atualizações enviadas pelo navegador; autenticação direta do Git pendente. Hospedagem não configurada.
+Repositório público: https://github.com/Riquee05/triply-ai. Atualizações enviadas pelo navegador; autenticação direta do Git pendente. Site: https://riquee05.github.io/triply-ai/.
 
 ## Modelo de aeronave
 
@@ -62,3 +62,6 @@ LA3652 em 12/03/2027: GRU 11:00 → SSA 13:20, programação de terça/quinta/se
 Informações de aeroportos: endereço GRU no site oficial https://www.gru.com.br/pt/passageiro/como-chegar-sair/carro; Terminal 2 doméstico na orientação LATAM https://www.latamairlines.com/br/pt/experiencia/aeroporto/aeroportos-principais/sao-paulo; endereço SSA na ANAC https://www.anac.gov.br/assuntos/paginas-tematicas/concessoes/aeroportos-concedidos/salvador/aeroporto-internacional-de-salvador. Portões não informados. Dados editáveis; datas do roteiro preservadas.
 
 
+
+
+Identidade Família a Bordo, com Belo Horizonte e Brasília marcadas por corações no Observatório e lista de viagens realizadas em família.

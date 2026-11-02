@@ -33,6 +33,14 @@ export function createObservatory(world){
     const c=document.createElement('canvas');c.width=256;c.height=64;const cctx=c.getContext('2d');cctx.fillStyle='#102731dd';cctx.fillRect(0,0,256,64);cctx.fillStyle='#f5dfb5';cctx.font='bold 22px Arial';cctx.textAlign='center';cctx.fillText(name,128,40);
     const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const label=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));label.position.copy(position).add(new THREE.Vector3(0,dy,.2));label.scale.set(1.6,.4,1);globe.add(label);
   }
+  // Past family trips, with offset labels for the nearby cities.
+  for(const [name,lat,lon,dx,dy] of [['BELO HORIZONTE',-19.92,-43.94,1.2,-.08],['BRASÍLIA',-15.79,-47.88,-1.05,.6]]){
+    const position=earthPoint(lat,lon,4.08);
+    const c=document.createElement('canvas');c.width=512;c.height=112;const context=c.getContext('2d');context.fillStyle='#102731ee';context.fillRect(0,0,512,112);context.textAlign='center';context.fillStyle='#f6bac9';context.font='bold 30px Arial';context.fillText('♥ '+name,256,47);context.fillStyle='#d3e3df';context.font='22px Arial';context.fillText('Já fomos em família',256,84);
+    const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;const label=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false}));label.position.copy(position).add(new THREE.Vector3(dx,dy,.35));label.scale.set(1.95,.43,1);globe.add(label);
+    const heartCanvas=document.createElement('canvas');heartCanvas.width=128;heartCanvas.height=128;const h=heartCanvas.getContext('2d');h.fillStyle='#f6a6bc';h.font='92px Arial';h.textAlign='center';h.fillText('♥',64,99);const heartTexture=new THREE.CanvasTexture(heartCanvas);heartTexture.colorSpace=THREE.SRGBColorSpace;const heart=new THREE.Sprite(new THREE.SpriteMaterial({map:heartTexture,transparent:true,depthTest:false}));heart.position.copy(position);heart.scale.set(.28,.28,1);globe.add(heart);
+    globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([position,label.position]),new THREE.LineBasicMaterial({color:0xe8a1b4,transparent:true,opacity:.8})));
+  }
   // Deterministic star field; no continuous motion or remote textures.
   const stars=[];let seed=1973;for(let i=0;i<400;i++){seed=(seed*1664525+1013904223)>>>0;const a=seed/4294967296*Math.PI*2;seed=(seed*1664525+1013904223)>>>0;const y=seed/4294967296*2-1;const r=40+ i%20;stars.push(Math.cos(a)*Math.sqrt(1-y*y)*r,y*r,Math.sin(a)*Math.sqrt(1-y*y)*r);}
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(stars,3));world.add(new THREE.Points(geometry,new THREE.PointsMaterial({color:0xb3d5df,size:.07,transparent:true,opacity:.6})));
