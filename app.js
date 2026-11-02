@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
-import { TDSLoader } from './vendor/TDSLoader.js';
+import { parseAircraft } from './aircraft-loader.js';
 const $=s=>document.querySelector(s);
 const places=[{id:'pelourinho',name:'Pelourinho',note:'Cores, história e arquitetura no Centro Histórico.',x:-3,z:0,color:0xe3ac7b},{id:'barra',name:'Farol da Barra',note:'Uma pausa para contemplar o mar e o farol.',x:3,z:2,color:0xf2e7ca},{id:'lacerda',name:'Elevador Lacerda',note:'Um encontro entre a Cidade Alta e a Cidade Baixa.',x:0,z:-3,color:0xd8c7a2}];
 let plan=[],persist=true;try{const saved=JSON.parse(localStorage.getItem('triply-plan')||'[]');if(Array.isArray(saved))plan=saved.filter(p=>places.some(l=>l.id===p.id)&&['12','13','14'].includes(p.day));}catch{persist=false;}
@@ -17,7 +17,7 @@ $('#intro').textContent='Preparando sua aeronave 3D…';
 try{
 aircraftData??=fetch('./assets/aircraft/aircraft.3ds').then(r=>{if(!r.ok)throw Error('Modelo indisponível');return r.arrayBuffer();}).catch(error=>{aircraftData=undefined;throw error;});
 const data=await aircraftData;if(sceneName!=='hangar'||version!==sceneVersion)return;
-const aircraft=new TDSLoader().parse(data,'./assets/aircraft/');
+const aircraft=parseAircraft(data);
 // O arquivo original usa Z como eixo vertical. O hangar usa Y.
 aircraft.rotation.x=-Math.PI/2;aircraft.rotation.z=Math.PI/2;
 aircraft.updateMatrixWorld(true);
@@ -34,7 +34,7 @@ function material(color){return new THREE.MeshStandardMaterial({color,roughness:
 function box(w,h,d,color,x=0,y=0,z=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));m.position.set(x,y,z);world.add(m);return m;}
 function sphere(r,color,x,y,z){const m=new THREE.Mesh(new THREE.SphereGeometry(r,32,20),material(color));m.position.set(x,y,z);world.add(m);return m;}
 function selectPlace(p){$('#panel-title').textContent=p.name;$('#detail').textContent=p.note+' Conteúdo conceitual; confirme horários e acesso antes de visitar.';if(controls&&sceneName==='salvador'){controls.target.set(p.x,.5,p.z);controls.update();}}
-function build(name){sceneName=name;document.body.dataset.scene=name;const version=++sceneVersion;$('#title').innerHTML=titles[name][0];$('#intro').textContent=titles[name][1];document.querySelectorAll('[data-scene]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scene===name)));if(!renderer)return;world.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of(Array.isArray(o.material)?o.material:[o.material]))m.dispose();}});world.clear();targets=[];controls.target.set(0,0,0);camera.position.set(11,9,14);scene.background=new THREE.Color(name==='salvador'?0x173c48:0x081822);scene.fog=new THREE.Fog(scene.background,25,65);
+function build(name){sceneName=name;document.body.dataset.scene=name;const version=++sceneVersion;$('#title').innerHTML=titles[name][0];$('#intro').textContent=titles[name][1];document.querySelectorAll('[data-scene]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scene===name)));if(!renderer)return;world.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of(Array.isArray(o.material)?o.material:[o.material]))m.dispose();}});world.clear();targets=[];controls.target.set(0,0,0);camera.position.set(11,9,14);renderer.toneMapping=name==='hangar'?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=.8;scene.background=new THREE.Color(name==='salvador'?0x173c48:0x081822);scene.fog=new THREE.Fog(scene.background,25,65);
 if(name==='salvador'||name==='central'){
 const island=new THREE.Mesh(new THREE.CylinderGeometry(7,5.8,.8,64),material(0x435f54));island.position.y=-.6;world.add(island);const sea=new THREE.Mesh(new THREE.CircleGeometry(100,64),material(0x174653));sea.rotation.x=-Math.PI/2;sea.position.y=-1.1;world.add(sea);
 for(let i=0;i<34;i++){const x=Math.sin(i*17)*5,z=Math.cos(i*13)*4.8,h=.6+(i%5)*.3;box(.65,h,.7,[0xc48565,0xe3bb78,0x93b9ab,0xe1c8a2,0x668eab][i%5],x,h/2,z);box(.73,.12,.78,0x5d6762,x,h+.06,z);}
@@ -49,5 +49,6 @@ let down;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.client
 const resize=()=>{const r=$('#world').getBoundingClientRect();camera.aspect=r.width/r.height;camera.updateProjectionMatrix();renderer.setSize(r.width,r.height);renderer.render(scene,camera);};window.addEventListener('resize',resize);build('central');resize();
 }catch(error){console.warn('Cenário 3D indisponível',error);notify('3D indisponível. Seu roteiro continua acessível pela lista.');}
 document.querySelectorAll('[data-scene]').forEach(b=>b.onclick=()=>build(b.dataset.scene));$('#explore').onclick=()=>build('salvador');$('#reset').onclick=()=>build(sceneName);
+
 
 
