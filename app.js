@@ -1,3 +1,4 @@
+import { setupMobilePanels } from './mobile-panels.js';
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { parseAircraft } from './aircraft-loader.js';
@@ -56,7 +57,7 @@ function material(color){return new THREE.MeshStandardMaterial({color,roughness:
 function box(w,h,d,color,x=0,y=0,z=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));m.position.set(x,y,z);world.add(m);return m;}
 function sphere(r,color,x,y,z){const m=new THREE.Mesh(new THREE.SphereGeometry(r,32,20),material(color));m.position.set(x,y,z);world.add(m);return m;}
 function selectPlace(p){$('#panel-title').textContent=p.name;$('#detail').textContent=p.note+' Conteúdo conceitual; confirme horários e acesso antes de visitar.';if(controls&&sceneName==='salvador'){const anchor=cityAnchors[p.id];if(anchor){world.updateWorldMatrix(true,false);controls.target.copy(world.localToWorld(anchor.clone()));controls.update();}}}
-function build(name){sceneName=name;document.body.dataset.scene=name;const version=++sceneVersion;$('#title').innerHTML=titles[name][0];$('#intro').textContent=titles[name][1];document.querySelectorAll('[data-scene]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scene===name)));if(!renderer)return;const disposed=new Set();world.traverse(o=>{if(o.isInstancedMesh)o.dispose();if(o.geometry&&!disposed.has(o.geometry)){o.geometry.dispose();disposed.add(o.geometry);}if(o.material){for(const m of(Array.isArray(o.material)?o.material:[o.material])){if(disposed.has(m))continue;for(const value of Object.values(m)){if(value?.isTexture&&!disposed.has(value)){value.dispose();disposed.add(value);}}m.dispose();disposed.add(m);}}o.shadow?.dispose();});world.clear();scene.children.filter(o=>o.isLight).forEach(o=>o.visible=name!=='hangar');renderer.shadowMap.enabled=false;targets=[];controls.minDistance=7;controls.maxDistance=30;controls.target.set(0,0,0);camera.position.set(11,9,14);renderer.toneMapping=name==='hangar'?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=.8;scene.background=new THREE.Color(name==='salvador'?0x173c48:0x081822);scene.fog=new THREE.Fog(scene.background,25,65);
+function build(name){sceneName=name;document.body.dataset.scene=name;const version=++sceneVersion;$('#title').innerHTML=titles[name][0];$('#intro').textContent=titles[name][1];document.querySelectorAll('button[data-scene]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scene===name)));if(!renderer)return;const disposed=new Set();world.traverse(o=>{if(o.isInstancedMesh)o.dispose();if(o.geometry&&!disposed.has(o.geometry)){o.geometry.dispose();disposed.add(o.geometry);}if(o.material){for(const m of(Array.isArray(o.material)?o.material:[o.material])){if(disposed.has(m))continue;for(const value of Object.values(m)){if(value?.isTexture&&!disposed.has(value)){value.dispose();disposed.add(value);}}m.dispose();disposed.add(m);}}o.shadow?.dispose();});world.clear();scene.children.filter(o=>o.isLight).forEach(o=>o.visible=name!=='hangar');renderer.shadowMap.enabled=false;targets=[];controls.minDistance=7;controls.maxDistance=30;controls.target.set(0,0,0);camera.position.set(11,9,14);renderer.toneMapping=name==='hangar'?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=.8;scene.background=new THREE.Color(name==='salvador'?0x173c48:0x081822);scene.fog=new THREE.Fog(scene.background,25,65);
 if(name==='central'){
 scene.children.filter(o=>o.isLight).forEach(o=>o.visible=false);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
 createSalvadorCentral(world,renderer);camera.position.set(10,7,14);controls.target.set(0,1.4,0);scene.fog=new THREE.Fog(0xb4c5c2,35,110);
@@ -81,7 +82,7 @@ try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'low-power'
 let down;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>6)return;const rect=renderer.domElement.getBoundingClientRect();const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hit=ray.intersectObjects(targets)[0];if(hit){if(hit.object.userData.action==='route')focusRoute();else selectPlace(hit.object.userData.place);}});
 const resize=()=>{if(sceneName==='observatory'&&innerWidth<=850){fitMobileGlobe();return;}const r=$('#world').getBoundingClientRect();camera.aspect=r.width/r.height;camera.updateProjectionMatrix();renderer.setSize(r.width,r.height);renderWorld();};window.addEventListener('resize',resize);build('central');resize();
 }catch(error){console.warn('Cenário 3D indisponível',error);notify('3D indisponível. Seu roteiro continua acessível pela lista.');}
-document.querySelectorAll('[data-scene]').forEach(b=>b.onclick=()=>build(b.dataset.scene));$('#explore').onclick=()=>build('salvador');$('#reset').onclick=()=>build(sceneName);
+document.querySelectorAll('button[data-scene]').forEach(b=>b.onclick=()=>build(b.dataset.scene));$('#explore').onclick=()=>build('salvador');$('#reset').onclick=()=>build(sceneName);
 const planToggle=document.createElement('button');planToggle.id='toggle-plan';planToggle.textContent='Abrir roteiro';planToggle.setAttribute('aria-expanded','false');
 planToggle.onclick=()=>{const open=document.body.dataset.planOpen!=='true';document.body.dataset.planOpen=String(open);planToggle.setAttribute('aria-expanded',String(open));planToggle.textContent=open?'Fechar roteiro':'Abrir roteiro';};
 document.querySelector('header').insertBefore(planToggle,$('#reset'));
@@ -89,6 +90,7 @@ const cityToggle=document.createElement('button');cityToggle.id='toggle-city';ci
 cityToggle.onclick=()=>{cityView=cityView==='district'?'overview':'district';cityToggle.textContent=cityView==='district'?'Ver maquete original':'Explorar Centro Histórico';build('salvador');};
 document.querySelector('header').insertBefore(cityToggle,planToggle);
 setupJourney(notify,focusRoute);
+setupMobilePanels();
 
 
 
