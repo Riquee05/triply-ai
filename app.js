@@ -1,3 +1,4 @@
+import { exportTravelDocument } from './travel-export.js';
 import { setupMobilePanels } from './mobile-panels.js';
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/OrbitControls.js';
@@ -32,7 +33,7 @@ function save(){try{localStorage.setItem('triply-plan',JSON.stringify(plan));}ca
 function renderPlan(){const day=$('#day').value;$('#day-notes').value=tripDetails.notes[day]||'';$('#itinerary').replaceChildren();const list=plan.filter(p=>p.day===day);$('#total').textContent=list.length;$('#empty').hidden=!!list.length;list.forEach(p=>{const li=document.createElement('li');li.textContent=places.find(l=>l.id===p.id).name;const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label','Remover '+li.textContent);b.onclick=()=>{plan=plan.filter(x=>x!==p);save();};const map=document.createElement('a');map.className='maps-link';map.textContent='Abrir no Google Maps ↗';map.href=mapsUrl(places.find(l=>l.id===p.id).name);map.target='_blank';map.rel='noopener noreferrer';map.setAttribute('aria-label','Abrir '+places.find(l=>l.id===p.id).name+' no Google Maps (nova aba)');li.append(b,map);$('#itinerary').append(li);});}
 places.forEach(p=>{const b=document.createElement('button');b.textContent='+ '+p.name;b.onclick=()=>{selectPlace(p);if(plan.some(x=>x.id===p.id&&x.day===$('#day').value))return notify('Este lugar já está no dia selecionado.');plan.push({id:p.id,day:$('#day').value});save();notify(persist?'Adicionado e salvo no navegador.':'Adicionado. Exporte para guardar.');};$('#places').append(b);});
 $('#day').onchange=renderPlan;renderPlan();
-$('#export').onclick=()=>{const blob=new Blob([JSON.stringify({destination:'Salvador',dates:'2027-03-12/2027-03-14',hotel:tripDetails.hotel,notesByDay:tripDetails.notes,itinerary:plan.map(p=>({...p,name:places.find(l=>l.id===p.id).name}))},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='familia-a-bordo-roteiro.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+$('#export').onclick=()=>exportTravelDocument({hotel:tripDetails.hotel,notes:tripDetails.notes,itinerary:plan.map(p=>({...p,name:places.find(l=>l.id===p.id).name}))});
 $('#count').textContent=Math.max(0,Math.ceil((new Date('2027-03-12T00:00:00-03:00')-Date.now())/86400000));
 let renderer,scene,camera,controls,world,sceneName='central',targets=[],sceneVersion=0,aircraftData;
 let cityData,cityAnchors={},cityView='district';
