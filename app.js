@@ -10,13 +10,27 @@ import { createObservatory } from './observatory.js';
 import { setupJourney } from './journey.js';
 const $=s=>document.querySelector(s);
 const places=[{id:'pelourinho',name:'Pelourinho',note:'Cores, história e arquitetura no Centro Histórico.',x:-3,z:0,color:0xe3ac7b},{id:'barra',name:'Farol da Barra',note:'Uma pausa para contemplar o mar e o farol.',x:3,z:2,color:0xf2e7ca},{id:'lacerda',name:'Elevador Lacerda',note:'Um encontro entre a Cidade Alta e a Cidade Baixa.',x:0,z:-3,color:0xd8c7a2}];
+places.push(...[
+['mercado-modelo','Mercado Modelo','Artesanato e cultura na Cidade Baixa.'],
+['bonfim','Igreja do Bonfim','Uma visita à Colina Sagrada.'],
+['porto-barra','Praia do Porto da Barra','Uma pausa à beira-mar.'],
+['rio-vermelho','Rio Vermelho','Um passeio pelo bairro e pela gastronomia baiana.'],
+['tororo','Dique do Tororó','Paisagem e esculturas em um cartão-postal da cidade.'],
+['mam','MAM / Solar do Unhão','Arte e paisagem junto à Baía de Todos-os-Santos.'],
+['carnaval','Casa do Carnaval da Bahia','Histórias e cultura do carnaval baiano.'],
+['catedral','Catedral Basílica de Salvador','Arquitetura e história no Centro Histórico.'],
+['humaita','Ponta de Humaitá','Uma vista da baía para guardar na memória.']
+].map(([id,name,note])=>({id,name,note})));
+let tripDetails={hotel:'',notes:{}};try{const data=JSON.parse(localStorage.getItem('familia-trip-details')||'null');if(data&&typeof data==='object'){if(typeof data.hotel==='string')tripDetails.hotel=data.hotel.slice(0,200);for(const day of ['12','13','14'])if(typeof data.notes?.[day]==='string')tripDetails.notes[day]=data.notes[day].slice(0,4000);}}catch{}
+function saveDetails(){tripDetails.hotel=$('#trip-hotel').value;tripDetails.notes[$('#day').value]=$('#day-notes').value;try{localStorage.setItem('familia-trip-details',JSON.stringify(tripDetails));$('#plan-save-status').textContent='Hotel e observações salvos neste navegador.';}catch{$('#plan-save-status').textContent='Não foi possível salvar. Exporte o roteiro para guardar.';}}
+$('#trip-hotel').value=tripDetails.hotel;$('#trip-hotel').addEventListener('input',saveDetails);$('#day-notes').addEventListener('input',saveDetails);
 let plan=[],persist=true;try{const saved=JSON.parse(localStorage.getItem('triply-plan')||'[]');if(Array.isArray(saved))plan=saved.filter(p=>places.some(l=>l.id===p.id)&&['12','13','14'].includes(p.day));}catch{persist=false;}
 let noticeTimer;function notify(t){$('#status').textContent=t;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#status').textContent='',4000);}
 function save(){try{localStorage.setItem('triply-plan',JSON.stringify(plan));}catch{persist=false;notify('Não foi possível salvar neste navegador. Exporte seu roteiro.');}renderPlan();}
-function renderPlan(){const day=$('#day').value;$('#itinerary').replaceChildren();const list=plan.filter(p=>p.day===day);$('#total').textContent=list.length;$('#empty').hidden=!!list.length;list.forEach(p=>{const li=document.createElement('li');li.textContent=places.find(l=>l.id===p.id).name;const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label','Remover '+li.textContent);b.onclick=()=>{plan=plan.filter(x=>x!==p);save();};li.append(b);$('#itinerary').append(li);});}
+function renderPlan(){const day=$('#day').value;$('#day-notes').value=tripDetails.notes[day]||'';$('#itinerary').replaceChildren();const list=plan.filter(p=>p.day===day);$('#total').textContent=list.length;$('#empty').hidden=!!list.length;list.forEach(p=>{const li=document.createElement('li');li.textContent=places.find(l=>l.id===p.id).name;const b=document.createElement('button');b.textContent='×';b.setAttribute('aria-label','Remover '+li.textContent);b.onclick=()=>{plan=plan.filter(x=>x!==p);save();};li.append(b);$('#itinerary').append(li);});}
 places.forEach(p=>{const b=document.createElement('button');b.textContent='+ '+p.name;b.onclick=()=>{selectPlace(p);if(plan.some(x=>x.id===p.id&&x.day===$('#day').value))return notify('Este lugar já está no dia selecionado.');plan.push({id:p.id,day:$('#day').value});save();notify(persist?'Adicionado e salvo no navegador.':'Adicionado. Exporte para guardar.');};$('#places').append(b);});
 $('#day').onchange=renderPlan;renderPlan();
-$('#export').onclick=()=>{const blob=new Blob([JSON.stringify({destination:'Salvador',dates:'2027-03-12/2027-03-14',itinerary:plan.map(p=>({...p,name:places.find(l=>l.id===p.id).name}))},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='familia-a-bordo-roteiro.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+$('#export').onclick=()=>{const blob=new Blob([JSON.stringify({destination:'Salvador',dates:'2027-03-12/2027-03-14',hotel:tripDetails.hotel,notesByDay:tripDetails.notes,itinerary:plan.map(p=>({...p,name:places.find(l=>l.id===p.id).name}))},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='familia-a-bordo-roteiro.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
 $('#count').textContent=Math.max(0,Math.ceil((new Date('2027-03-12T00:00:00-03:00')-Date.now())/86400000));
 let renderer,scene,camera,controls,world,sceneName='central',targets=[],sceneVersion=0,aircraftData;
 let cityData,cityAnchors={},cityView='district';
@@ -31,7 +45,7 @@ const text=await cityData;if(sceneName!=='salvador'||version!==sceneVersion)retu
 let materials={};try{materials=await loadCityMaterials();}catch(error){console.warn('Texturas indisponíveis; usando cores locais',error);}
 if(sceneName!=='salvador'||version!==sceneVersion){disposeCityMaterials(materials);return;}
 const {model,anchors}=parseCity(text,materials);cityAnchors=anchors;world.add(model);
-for(const p of places){const a=anchors[p.id];const marker=sphere(.14,0xe2f8c8,a.x,a.y+.4,a.z);marker.userData.place=p;targets.push(marker);box(.025,.35,.025,0xd0e8bd,a.x,a.y+.18,a.z);}
+for(const p of places){const a=anchors[p.id];if(!a)continue;const marker=sphere(.14,0xe2f8c8,a.x,a.y+.4,a.z);marker.userData.place=p;targets.push(marker);box(.025,.35,.025,0xd0e8bd,a.x,a.y+.18,a.z);}
 $('#intro').textContent='Modelo de Salvador · pontos ilustrativos, sem georreferenciamento.';renderWorld();
 }catch(error){console.warn('Falha ao abrir Salvador',error);if(version===sceneVersion){$('#intro').textContent='Não foi possível abrir o modelo. Seu roteiro continua disponível.';notify('Use Visão geral para tentar novamente.');}}
 }
