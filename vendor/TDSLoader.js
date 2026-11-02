@@ -284,7 +284,8 @@ class TDSLoader extends Loader {
 			} else if ( next.id === MAT_AMBIENT ) {
 
 				this.debugMessage( '   Ambient color' );
-				material.color = this.readColor( next );
+				// Ambient is not the surface's diffuse color.
+				this.readColor( next );
 
 			} else if ( next.id === MAT_SHININESS ) {
 
@@ -439,7 +440,10 @@ class TDSLoader extends Loader {
 				inverse.copy( matrix ).invert();
 				geometry.applyMatrix4( inverse );
 
-				matrix.decompose( mesh.position, mesh.quaternion, mesh.scale );
+				// Preserve the complete affine transform. Decomposition loses shear
+				// present in this 3DS export, separating and distorting aircraft parts.
+				mesh.matrix.copy( matrix );
+				mesh.matrixAutoUpdate = false;
 
 			} else {
 
@@ -486,6 +490,8 @@ class TDSLoader extends Loader {
 
 		let materialIndex = 0;
 		let start = 0;
+		const orderedIndex = [];
+		const assignedFaces = new Set();
 
 		while ( ! chunk.endOfChunk ) {
 
@@ -496,7 +502,12 @@ class TDSLoader extends Loader {
 				this.debugMessage( '      Material Group' );
 
 				const group = this.readMaterialGroup( subchunk );
-				const count = group.index.length * 3; // assuming successive indices
+				const count = group.index.length * 3;
+				// Material face lists need not be consecutive in a 3DS file.
+				for ( const face of group.index ) {
+					orderedIndex.push( index[face * 3], index[face * 3 + 1], index[face * 3 + 2] );
+					assignedFaces.add( face );
+				}
 
 				mesh.geometry.addGroup( start, count, materialIndex );
 
@@ -507,11 +518,7 @@ class TDSLoader extends Loader {
 
 				if ( Array.isArray( mesh.material ) === false ) mesh.material = [];
 
-				if ( material !== undefined )	{
-
-					mesh.material.push( material );
-
-				}
+				mesh.material.push( material || new MeshPhongMaterial() );
 
 			} else {
 
@@ -521,6 +528,17 @@ class TDSLoader extends Loader {
 
 		}
 
+		if ( materialIndex > 0 ) {
+			const unassignedStart = orderedIndex.length;
+			for ( let face = 0; face < faces; face ++ ) {
+				if ( !assignedFaces.has( face ) ) orderedIndex.push( index[face*3], index[face*3+1], index[face*3+2] );
+			}
+			if ( orderedIndex.length > unassignedStart ) {
+				mesh.geometry.addGroup( unassignedStart, orderedIndex.length-unassignedStart, mesh.material.length );
+				mesh.material.push( new MeshPhongMaterial() );
+			}
+			mesh.geometry.setIndex( orderedIndex );
+		}
 		if ( mesh.material.length === 1 ) mesh.material = mesh.material[ 0 ]; // for backwards compatibility
 
 	}
