@@ -1,16 +1,12 @@
 import * as T from './vendor/three.module.js';
 import {parseAircraft} from './aircraft-loader.js';
+import {orientFlightAircraft} from './air-model.js';
 // Loaded only when the flight section enters the viewport. No dependency on the main world's state.
 export async function createFlight(container) {
   const response=await fetch('./assets/aircraft/aircraft.3ds');
   if(!response.ok)throw Error('Modelo do Hangar indisponível.');
   const aircraft=parseAircraft(await response.arrayBuffer());
-  aircraft.rotation.x=-Math.PI/2;aircraft.rotation.z=Math.PI/2;
-  aircraft.updateMatrixWorld(true);
-  let bounds=new T.Box3().setFromObject(aircraft);
-  const extent=bounds.getSize(new T.Vector3());aircraft.scale.multiplyScalar(10.8/Math.max(extent.x,extent.y,extent.z));
-  aircraft.updateMatrixWorld(true);bounds=new T.Box3().setFromObject(aircraft);
-  const center=bounds.getCenter(new T.Vector3());aircraft.position.set(-center.x,-1.08-bounds.min.y,-center.z);
+  orientFlightAircraft(aircraft);
   aircraft.traverse(o=>{if(o.isMesh){o.geometry.computeVertexNormals();for(const material of(Array.isArray(o.material)?o.material:[o.material])){material.side=T.DoubleSide;material.shininess=Math.min(material.shininess||30,60);}}});
   const renderer=new T.WebGLRenderer({alpha:false,antialias:true,powerPreference:'low-power'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;

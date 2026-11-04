@@ -1,0 +1,21 @@
+import {registerHooks} from 'node:module';
+import {readFile} from 'node:fs/promises';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+registerHooks({resolve(specifier,context,next){return next(specifier==='three'?new URL('./vendor/three.module.js',import.meta.url).href:specifier,context);}});
+const T=await import('./vendor/three.module.js');
+const {parseAircraft}=await import('./aircraft-loader.js');
+const {orientFlightAircraft}=await import('./air-model.js');
+test('actual Hangar model points down runway +X, with vertical tail behind and level wings',async()=>{
+  const bytes=await readFile(new URL('./assets/aircraft/aircraft.3ds',import.meta.url));
+  const aircraft=orientFlightAircraft(parseAircraft(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)));
+  const bounds=new T.Box3().setFromObject(aircraft),size=bounds.getSize(new T.Vector3());
+  const tail=new T.Vector3();let count=0;
+  aircraft.traverse(o=>{if(!o.isMesh)return;const p=o.geometry.attributes.position;for(let i=0;i<p.count;i++){const v=new T.Vector3().fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);if(v.y>bounds.min.y+size.y*.9){tail.add(v);count++;}}});
+  assert.ok(count>0);tail.divideScalar(count);
+  assert.ok(tail.x<-3,'vertical tail must be aft along -X, nose toward +X');
+  assert.ok(Math.abs(tail.z)<.05,'vertical tail must lie on the runway centerline');
+  assert.ok(Math.abs(bounds.min.y+1.08)<1e-5,'landing gear must remain at runway height');
+  assert.ok(Math.abs(bounds.min.z+bounds.max.z)<1e-5,'wings must stay centered across runway');
+  assert.ok(Math.abs(Math.max(size.x,size.y,size.z)-10.8)<1e-5,'preserve model scale');
+});
