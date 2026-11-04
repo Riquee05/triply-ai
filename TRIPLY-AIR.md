@@ -38,3 +38,10 @@ Ainda necessário: teste físico de câmera entre dois celulares e desempenho em
 ## Reversão
 
 Restaurar o commit anterior remove o link e o módulo. Dados do roteiro e jornada não são tocados. As chaves locais Air podem permanecer sem afetar o site anterior.
+
+
+## Aeroporto 3D estilizado
+
+O cenário inclui terminal envidraçado, sinalização G11/G12/G13, ponte retrátil do G12, pátio demarcado, ônibus, rebocador, bagagens, cones, torre de controle, árvores, cidade instanciada, colinas, horizonte marítimo, céu em gradiente e nuvens. Iluminação de fim de tarde, sombras arquitetônicas de 1024 px e sombra suave da aeronave. Texturas de fachadas, placas e concreto são geradas localmente; sem novos recursos externos. A pista tem eixo próprio: a reserva começa no pátio, e as etapas de táxi/decolagem/pouso usam a pista. O cenário é artístico e não replica GRU ou SSA.
+
+A ponte se recolhe no pushback. Elementos repetidos usam instâncias e geometria/material compartilhados. Renderização sob demanda e pausa fora de vista mantidas; céu e edifícios não adicionam serviços ou dependências pagas. O avião original do Hangar e sua orientação para +X foram preservados. Verificação: seis testes (`node --test air.test.mjs air-model.test.mjs`), conferência visual em tela de celular sem transbordamento e fases de voo no navegador. Desempenho físico em celulares modestos continua pendente.

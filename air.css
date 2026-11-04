@@ -3,3 +3,6 @@
 .air-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}.has-3d>.sun,.has-3d>.cloud,.has-3d>.runway,.has-3d>.plane{display:none}.has-3d .hud{pointer-events:none}
 
 .systems{position:absolute;top:15px;left:15px;display:flex;gap:12px;font-size:9px;letter-spacing:1px;background:#071923bb;border:1px solid #83a5a5;border-radius:8px;padding:8px;color:#b0c5c5}.systems span{transition:color 1s}.systems .flap-status{display:inline-block}#flight-view:is([data-phase="2"],[data-phase="3"],[data-phase="4"],[data-phase="5"],[data-phase="6"],[data-phase="7"]) .engine-status{color:#d0efa8}#flight-view:is([data-phase="3"],[data-phase="4"],[data-phase="6"],[data-phase="7"]) .flap-status{color:#d0efa8;transform:rotate(6deg)}
+
+/* Airport diorama: room for the terminal, skyline and boarding bridge. */
+#flight-view{height:530px;border:1px solid #5f7e83;box-shadow:0 28px 80px #0004}.hud{padding:26px;background:linear-gradient(transparent,#071923ed)}.hud strong{font-family:Georgia,serif;font-size:32px}.systems{backdrop-filter:blur(8px);background:#102c3866;border-color:#d8e7db55;top:18px;left:18px;padding:10px 14px}#sound{min-height:20px;width:20px;margin:0}.actions>label:has(#sound){display:flex;flex-direction:row;align-items:center;flex:0 0 auto;gap:9px}@media(max-width:650px){#flight-view{height:420px}.hud{padding:20px}.hud strong{font-size:28px}}

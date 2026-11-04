@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {parseAircraft} from './aircraft-loader.js';
 import {orientFlightAircraft} from './air-model.js';
+import {createAirport,createAirportSky} from './air-airport.js';
 // Loaded only when the flight section enters the viewport. No dependency on the main world's state.
 export async function createFlight(container) {
   const response=await fetch('./assets/aircraft/aircraft.3ds');
@@ -9,32 +10,34 @@ export async function createFlight(container) {
   orientFlightAircraft(aircraft);
   aircraft.traverse(o=>{if(o.isMesh){o.geometry.computeVertexNormals();for(const material of(Array.isArray(o.material)?o.material:[o.material])){material.side=T.DoubleSide;material.shininess=Math.min(material.shininess||30,60);}}});
   const renderer=new T.WebGLRenderer({alpha:false,antialias:true,powerPreference:'low-power'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;
-  renderer.domElement.className='air-canvas';renderer.domElement.setAttribute('aria-label','Aeronave 3D conceitual sobre a pista');container.prepend(renderer.domElement);
-  const scene=new T.Scene();scene.background=new T.Color('#326879');scene.fog=new T.Fog('#326879',40,150);
-  const camera=new T.PerspectiveCamera(38,1,.1,300);scene.add(new T.HemisphereLight(0xf1e5c8,0x183344,3));const sun=new T.DirectionalLight(0xffdaab,3);sun.position.set(-20,25,15);scene.add(sun);
-  const plane=new T.Group();scene.add(plane);
-  const white=new T.MeshStandardMaterial({color:0xe3ece2,metalness:.35,roughness:.45}),navy=new T.MeshStandardMaterial({color:0x173f4d,metalness:.3,roughness:.55}),lime=new T.MeshStandardMaterial({color:0xcceba7,roughness:.55}),dark=new T.MeshStandardMaterial({color:0x152630});
-  function mesh(geo,mat,parent=plane,x=0,y=0,z=0){const m=new T.Mesh(geo,mat);m.position.set(x,y,z);parent.add(m);return m;}
-  plane.add(aircraft);
-  const ground=new T.Group();scene.add(ground);mesh(new T.BoxGeometry(250,.2,180),new T.MeshStandardMaterial({color:0x59766b}),ground,0,-1.28,0);mesh(new T.BoxGeometry(220,.03,10),new T.MeshStandardMaterial({color:0x263943}),ground,0,-1.15,0);
-  const stripes=[];for(let i=0;i<28;i++)stripes.push(mesh(new T.BoxGeometry(3,.025,.2),white,ground,i*8-110,-1.12,0));
-  for(const z of [-5,5])for(let x=-90;x<100;x+=8)mesh(new T.SphereGeometry(.07,5,4),lime,ground,x,-1.05,z);
-  const terminal=mesh(new T.BoxGeometry(30,3,7),navy,ground,20,.3,-24);mesh(new T.BoxGeometry(28,1.1,.05),new T.MeshStandardMaterial({color:0x88b9bd,metalness:.65,roughness:.2}),ground,20,.8,-20.45);
-  camera.position.set(-12,6,14);camera.lookAt(0,0,0);
-  let phase=0,visible=false,frame=0,last=0,elapsed=0,currentY=0,angle=0;
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
+  renderer.domElement.className='air-canvas';renderer.domElement.setAttribute('aria-label','Aeroporto 3D com terminal, portão G12, ponte de embarque, cidade e avião do Hangar');container.prepend(renderer.domElement);
+  const scene=new T.Scene();scene.fog=new T.Fog('#b9c0b4',65,190);
+  createAirportSky(scene);
+  const camera=new T.PerspectiveCamera(41,1,.1,500);
+  scene.add(new T.HemisphereLight(0xc8e7f3,0x6d6856,2.5));
+  const sun=new T.DirectionalLight(0xffd5a0,3.4);sun.position.set(-22,35,15);sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-40,right:40,top:32,bottom:-32,near:1,far:100});sun.shadow.bias=-.0005;sun.shadow.normalBias=.04;scene.add(sun);
+  const plane=new T.Group();plane.add(aircraft);scene.add(plane);
+  const airport=createAirport(scene);renderer.shadowMap.needsUpdate=true;
+  let phase=0,visible=false,frame=0,last=0,elapsed=0,currentY=0,currentZ=0,angle=0;
   const reduced=matchMedia('(prefers-reduced-motion:reduce)');
   const resize=()=>{const {width,height}=container.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);draw(0);};
-  function draw(dt){const targetY=[0,0,0,0,3,10,5,0,0][phase],targetAngle=[0,0,0,0,.22,0,-.06,0,0][phase];currentY+= (targetY-currentY)*(reduced.matches?1:Math.min(1,dt*2+.04));angle+=(targetAngle-angle)*(reduced.matches?1:.05);plane.position.y=currentY;plane.rotation.z=angle;plane.position.x=phase===1?-1.2:phase===8?2:0;
-    ground.position.y=phase===5?-18:phase===6?-6:0;ground.visible=phase!==5;
-    if(!reduced.matches){if([3,4,7].includes(phase))for(const s of stripes)s.position.x=((s.position.x+110-dt*(phase===3?4:24)+224)%224)-110;}
-    camera.position.y=6+currentY;camera.lookAt(0,currentY,0);
+  function draw(dt){
+    const targetY=[0,0,0,0,3,10,5,0,0][phase],targetZ=phase>=3&&phase<=7?15:0,targetAngle=[0,0,0,0,.22,0,-.06,0,0][phase];
+    const ease=reduced.matches?1:Math.min(1,dt*2+.04);
+    currentY+=(targetY-currentY)*ease;currentZ+=(targetZ-currentZ)*ease;angle+=(targetAngle-angle)*(reduced.matches?1:.05);
+    plane.position.set(phase===1||phase===2?-3:0,currentY,currentZ);plane.rotation.z=angle;
+    airport.update(phase,reduced.matches?0:dt,plane.position);
+    const narrow=camera.aspect<1, distance=narrow?1.45:1;
+    camera.position.set(-13.8*distance,(phase===5||phase===6?2.8:8.2)*distance+currentY,19*distance+currentZ);
+    camera.lookAt(1,currentY+.7,currentZ-2);
     renderer.render(scene,camera);
   }
-  function loop(t){frame=0;if(!visible||document.hidden)return;const dt=Math.min(.06,(t-last)/1000||0);last=t;elapsed+=dt;if(elapsed>.032){draw(elapsed);elapsed=0;}if(!reduced.matches&&phase>=1&&phase<=7)frame=requestAnimationFrame(loop);}
+  function loop(t){frame=0;if(!visible||document.hidden)return;const dt=Math.min(.06,(t-last)/1000||0);last=t;elapsed+=dt;if(elapsed>.032){draw(elapsed);elapsed=0;}const settling=Math.abs(currentY-[0,0,0,0,3,10,5,0,0][phase])>.01||Math.abs(currentZ-(phase>=3&&phase<=7?15:0))>.01||Math.abs(angle-[0,0,0,0,.22,0,-.06,0,0][phase])>.001;if(!reduced.matches&&((phase>=1&&phase<=7)||settling))frame=requestAnimationFrame(loop);}
   function wake(){if(visible&&!document.hidden&&!frame)frame=requestAnimationFrame(loop);}
   new ResizeObserver(resize).observe(container);
   new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;if(visible){resize();wake();}else{cancelAnimationFrame(frame);frame=0;}},{threshold:.05}).observe(container);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;}else wake();});
-  resize();return {setPhase(value){phase=value;draw(0);wake();}};
+  resize();return {setPhase(value){phase=value;renderer.shadowMap.needsUpdate=true;draw(0);wake();}};
 }
