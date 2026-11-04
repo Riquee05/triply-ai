@@ -65,3 +65,8 @@ Informações de aeroportos: endereço GRU no site oficial https://www.gru.com.b
 
 
 Identidade Família a Bordo, com Belo Horizonte e Brasília marcadas por corações no Observatório e lista de viagens realizadas em família.
+
+
+## Triply Air — simulador
+
+Novo módulo isolado em `air.html`, com acesso pela Central. Pesquisa fictícia, família, cabine, check-in, cartões QR, portão em outro celular e sequência 3D com o modelo do Hangar. Sem cobranças, bilhetes válidos ou sincronização remota. Plano, limites e teste em dois aparelhos: [TRIPLY-AIR.md](TRIPLY-AIR.md). Verificação: `node --test air.test.mjs`.
