@@ -32,6 +32,7 @@ export async function createFlight(container) {
   function draw(dt){const targetY=[0,0,0,0,3,10,5,0,0][phase],targetAngle=[0,0,0,0,.22,0,-.06,0,0][phase];currentY+= (targetY-currentY)*(reduced.matches?1:Math.min(1,dt*2+.04));angle+=(targetAngle-angle)*(reduced.matches?1:.05);plane.position.y=currentY;plane.rotation.z=angle;plane.position.x=phase===1?-1.2:phase===8?2:0;
     ground.position.y=phase===5?-18:phase===6?-6:0;ground.visible=phase!==5;
     if(!reduced.matches){if([3,4,7].includes(phase))for(const s of stripes)s.position.x=((s.position.x+110-dt*(phase===3?4:24)+224)%224)-110;}
+    camera.position.y=6+currentY;camera.lookAt(0,currentY,0);
     renderer.render(scene,camera);
   }
   function loop(t){frame=0;if(!visible||document.hidden)return;const dt=Math.min(.06,(t-last)/1000||0);last=t;elapsed+=dt;if(elapsed>.032){draw(elapsed);elapsed=0;}if(!reduced.matches&&phase>=1&&phase<=7)frame=requestAnimationFrame(loop);}
